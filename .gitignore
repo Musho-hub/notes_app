@@ -1,0 +1,43 @@
+# === PYTHON / DJANGO ===
+__pycache__/
+*.py[cod]
+*.sqlite3
+venv/
+.env
+*.log
+
+# === DJANGO SPECIFIC ===
+db.sqlite3
+staticfiles/
+media/
+*.pot
+*.pyc
+pyproject.toml
+
+# === NODE / NEXT.JS ===
+node_modules/
+.next/
+out/
+dist/
+coverage/
+build/
+
+# === ENV FILES ===
+.env.local
+.env.development
+.env.production
+.env.test
+
+# === SYSTEM / OS ===
+.DS_Store
+Thumbs.db
+
+# === EDITOR / IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# === BACKEND / FRONTEND LOCAL FOLDERS ===
+notes_app_backend/venv/
+notes_app_frontend/node_modules/
