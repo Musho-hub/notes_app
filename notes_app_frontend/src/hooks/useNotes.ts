@@ -66,7 +66,7 @@ export function useNotes() {
         if (!token) throw new Error("Not authenticated");
         // Send POST request with new note data
         const res = await api.post<Note>(
-            "Notes/", // Endpoint: /api/notes/
+            "notes/", // Endpoint: /api/notes/
             { title, content }, // Payload: note data from form inputs
             { headers: { Authorization: `Bearer ${token}`} } // Auth header with token
         );
