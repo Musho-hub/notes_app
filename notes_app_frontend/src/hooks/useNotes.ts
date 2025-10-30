@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// === API === //
+// -= API =- //
 import api, { fetchNotes, deleteNote, updateNote } from "@/lib/api";
 
-// === TYPES === //
+// -= TYPES =- //
 import type { Note } from "@/lib/types";
 
 /**
@@ -18,6 +18,7 @@ export function useNotes() {
     const [notes, setNotes] = useState<Note[]>([]); // All notes fetched from the backend
     const [error, setError] = useState("");         // Error message (if any)
     const [loading, setLoading] = useState(false);  // Loading indicator for API actions
+
     const router = useRouter();
 
     // === Load Notes on Mount === //
@@ -29,7 +30,7 @@ export function useNotes() {
         async function loadNotes() {
             const token = localStorage.getItem("access_token"); // Grab the access token from localStorage
             if (!token) {
-                // No token → user is not authenticated → redirect to login
+                // If no token → user isn't logged in → redirect to login
                 router.push("/login");
                 return; // Stop execution
             }
@@ -37,8 +38,7 @@ export function useNotes() {
             try {
                 // Fetch all notes from backend API
                 const data = await fetchNotes(token);
-                // Save fetched notes into state → triggers re-render
-                setNotes(data);
+                setNotes(data); // Save fetched notes into state → triggers re-render
             } catch (err: any) {
                 // Handle authentication errors (expired or invalid token)
                 if (err.response?.status === 401 || err.response?.status === 403) {
@@ -70,9 +70,8 @@ export function useNotes() {
             { title, content }, // Payload: note data from form inputs
             { headers: { Authorization: `Bearer ${token}`} } // Auth header with token
         );
-        // Update state with the newly created note
-        // - res.data = the note returned from the backend (with id, owner, timestamps)
-        // - Prepend it to the existing notes list (new note at the top)
+        // Update local state with the newly created note
+        // Prepend it to the existing notes list (new note at the top)
         setNotes((prev) => [res.data, ...prev]);
     }
 
@@ -90,7 +89,7 @@ export function useNotes() {
             { title: note.title, content: note.content }, // New data
             token // Auth token
         );
-        // Update local state: replace old note with updated version
+        // Update local state: replace matching note with updated version
         setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
     }
 
@@ -105,7 +104,7 @@ export function useNotes() {
 
         await deleteNote(id, token); // Delete note from backend
 
-        // Remove deleted note from local state
+        // Remove deleted note from the local notes array
         setNotes((prev) => prev.filter((n) => n.id !== id));
     }
 
