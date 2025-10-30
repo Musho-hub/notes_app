@@ -3,15 +3,17 @@
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { ChevronDown, Check } from "lucide-react";
 
-// === HOOKS === //
+// -= HOOKS =- //
 import { useTheme } from "@/hooks/useTheme";
 
-// === TYPES === //
+// -= THEME CONSTANTS =- //
+import { THEMES, THEME_COLORS } from "@/lib/constants/themes";
+
+// -= TYPES =- //
 import type { UserMenuProps } from "@/types/components";
 
 export function UserMenu({ username, onLogout}: UserMenuProps) {
     const { theme, setTheme } = useTheme();
-    const themes = ["light", "dark", "pastel", "system"] as const;
 
     return(
         <Menu as="div" className="relative inline-block text-left">
@@ -27,7 +29,8 @@ export function UserMenu({ username, onLogout}: UserMenuProps) {
             >
                 {/* Avatar placeholder (first letter of username) */}
                 <ChevronDown size={16} className={`transition-transform duration-200 group-hover:rotate-[0deg] ${open ? "rotate-0 text-success" : "rotate-90 text-text"}`} />
-                <span className="font-medium text-text hidden sm:inline">{username}</span>
+                {/* <span className="font-medium text-text hidden sm:inline capitalize">{username}</span> */}
+                {/* ^ looks better without maybe? ^ */}
                 <div className="
                         w-8 h-8 rounded-md bg-neutral text-white 
                         flex items-center justify-center font-semibold uppercase
@@ -49,19 +52,23 @@ export function UserMenu({ username, onLogout}: UserMenuProps) {
             >
                 <div className="p-2">
                     <p className="text-xs text-text/60 px-2 mb-1 uppercase tracking-wide">Theme</p>
-                    {themes.map((t) => (
+                    {THEMES.map((t) => (
                         <MenuItem key={t}>
                             <button 
                                 onClick={() => setTheme(t)} 
                                 data-selected={theme === t ? "true" : undefined}
                                 className="
                                         w-full flex items-center justify-between 
-                                        px-3 py-1.5 rounded-md text-sm capitalize transition 
-                                        data-[active]:bg-neutral-hover/30 
+                                        px-3 py-1.5 my-1 rounded-md text-sm capitalize transition 
+                                        data-[active]:bg-neutral-hover/50 
                                         data-[selected]:bg-neutral/30 data-[selected]:text-white
+                                        data-[selected]:ring ring-neutral/70
                                     "
                             >
-                                <span>{t}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded-full" style={{backgroundColor: THEME_COLORS[t]}}></span>
+                                    <span>{t}</span>
+                                </div>
                                 {theme === t && <Check size={14} className="opacity-80 text-success" />}
                             </button>
                         </MenuItem>
