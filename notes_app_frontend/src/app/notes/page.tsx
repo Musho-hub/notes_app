@@ -1,28 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// === API === //
-import api, { deleteNote, fetchNotes, updateNote } from "@/lib/api";
-
-// === HOOKS === //
+// -= HOOKS =- //
 import { useNotes } from "@/hooks/useNotes";
 
-// === COMPONETS === //
+// -= COMPONETS =- //
 import { UserMenu } from "@/components/UserMenu";
 
-// === TYPES === //
+// -= TYPES =- //
 import type { Note } from "@/lib/types";
 
-
+/**
+ * NotesPage
+ * --------------------------------
+ * Displays a list of notes fetched from the backend and
+ * allows the user to create, edit, and delete notes.
+ * Uses the `useNotes` hook for all note logic.
+ */
 const NotesPage = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [editingNote, setEditingNote] = useState<Note | null>(null);
-
-  const router = useRouter();
   const { notes, error, loading, createNote, saveEdit, removeNote, setError } = useNotes();
+  const router = useRouter();
 
   // === Logout handler === //
   const handleLogout = () => {
@@ -31,7 +33,7 @@ const NotesPage = () => {
     router.push("/login");
   };
 
-  // === Create, Edit, Delete === //
+  // === Create note handler === //
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -43,6 +45,7 @@ const NotesPage = () => {
     }
   };
 
+  // === Edit note handler === //
   const handleSaveEdit = async () => {
     if (!editingNote) return;
     try {
@@ -53,6 +56,7 @@ const NotesPage = () => {
     }
   };
 
+  // === Delete note handler === //
   const handleDelete = async (id: number) => {
     try {
       await removeNote(id);
@@ -68,7 +72,10 @@ const NotesPage = () => {
     <div className="p-8 min-h-screen bg-page text-text transition-colors duration-500">
       {/* === Header - Title + User Menu === */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold underline">My Notes</h1>
+        {/* <h1 className="text-2xl font-bold underlines">My Notes</h1> */}
+        {/* ^ My Notes ^ */}
+        <h1 className="text-2xl font-bold underline capitalize">{username}'s Notes</h1>
+        {/* ^ username + Notes ^ */}
         <UserMenu username={username} onLogout={handleLogout} />
       </div>
 
