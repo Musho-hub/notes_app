@@ -66,6 +66,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'config.middleware.JWTAuthCookieMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -75,9 +76,10 @@ MIDDLEWARE = [
 # --------------------------------------------------------
 # CORS (allow frontend to talk to backend)
 # --------------------------------------------------------
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",    # Next.js dev server
-]
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000"] # Next.js dev server
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"] # Let frontend read csrf cookies
+CSRF_COOKIE_HTTPONLY = False
 
 ROOT_URLCONF = 'config.urls'
 
@@ -166,7 +168,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",    # Use JWTs for API auth
-        "rest_framework.authentication.SessionAuthentication",          # Allow session login in browsable API
+        # "rest_framework.authentication.SessionAuthentication",        # Allow session login for browsable API
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",    # By default, all API endpoints require login
@@ -174,7 +176,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=3),   # was 5 minutes
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=3),   # was 5 minutes (set to 30-60min for production)
     "REFRESH_TOKEN_LIFETIME": timedelta(days=14),  # was 1 day
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
