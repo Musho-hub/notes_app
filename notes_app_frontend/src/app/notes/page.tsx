@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 // -= HOOKS =- //
 import { useNotes } from "@/hooks/useNotes";
 
+// -= API =- //
+import { logout } from "@/lib/api";
+
 // -= COMPONETS =- //
 import { UserMenu } from "@/components/UserMenu";
 
@@ -23,14 +26,19 @@ const NotesPage = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+
   const { notes, error, loading, createNote, saveEdit, removeNote, setError } = useNotes();
+
   const router = useRouter();
 
   // === Logout handler === //
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      await logout(); // Clears HttpOnly cookies on backend
+      router.push("/login");
+    } catch {
+      setError("Failed to logout");
+    }
   };
 
   // === Create note handler === //
