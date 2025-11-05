@@ -17,14 +17,10 @@ const LoginPage = () => {
         setError("");
 
         try {
-            const res = await login(username, password);
-
-            // Save token to local storage
-            localStorage.setItem("access_token", res.access);
-            
-            router.push("notes/");
+            await login(username, password); // Backend sets cookies
+            router.push("notes/"); // Redirect after successful login
         } catch {
-            setError("Invalid credentials");
+            setError("Invalid username or password");
         }
     }
 
