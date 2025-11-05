@@ -11,112 +11,129 @@ import type { Note } from "@/lib/types";
 
 /**
  * Hook to manage note data and API interactions.
- * Handles loading, creation, editing, and deletion of notes.
+ * Handles fetching, creating, updating, and deleting notes
+ * from the backend API, using HttpOnly JWT cookies for authentication.
+ * This hook also manages local state for loading and error handling,
+ * and automatically redirects to `/login` if authentication fails.
  */
 export function useNotes() {
-    // === Local State === //
-    const [notes, setNotes] = useState<Note[]>([]); // All notes fetched from the backend
-    const [error, setError] = useState("");         // Error message (if any)
-    const [loading, setLoading] = useState(false);  // Loading indicator for API actions
+  // ---------------------------------------------------------------------------
+  // Local state
+  // ---------------------------------------------------------------------------
+  const [notes, setNotes] = useState<Note[]>([]); // All notes fetched from the backend
+  const [error, setError] = useState(""); // Error message
+  const [loading, setLoading] = useState(false); // Whether an API request is in progress
 
-    const router = useRouter();
+  const router = useRouter();
 
-    // === Load Notes on Mount === //
-    useEffect(() => {
-        /**
-        * Fetches all notes from the backend API on initial render.
-        * If no token exists, redirects the user to the login page.
-        */
-        async function loadNotes() {
-            const token = localStorage.getItem("access_token"); // Grab the access token from localStorage
-            if (!token) {
-                // If no token → user isn't logged in → redirect to login
-                router.push("/login");
-                return; // Stop execution
-            }
-            setLoading(true); // Show loading state while fetching
-            try {
-                // Fetch all notes from backend API
-                const data = await fetchNotes(token);
-                setNotes(data); // Save fetched notes into state → triggers re-render
-            } catch (err: any) {
-                // Handle authentication errors (expired or invalid token)
-                if (err.response?.status === 401 || err.response?.status === 403) {
-                    localStorage.removeItem("access_token"); // Clear expired/invalid token
-                    router.push("/login");  // Redirect user to login page
-                } else {
-                    // Handle general fetch errors
-                    setError("Failed to load notes");
-                }
-            } finally {
-                // Always remove loading state, even if error occurs
-                setLoading(false);
-            }
+  // === Load notes on mount === //
+  useEffect(() => {
+    /**
+     * Fetch all notes when the component first mounts.
+     * If authentication fails (401/403), redirect to `/login`.
+     */
+    async function loadNotes() {
+      setLoading(true); // Show loading state while fetching
+      try {
+        const data = await fetchNotes(); // Fetch notes from the backend (JWT cookie is sent automatically)
+        setNotes(data); // Save fetched notes into state → triggers re-render
+      } catch (err: any) {
+        // If authentication fails (expired or invalid token), redirect to login
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          router.push("/login"); // If not authenticated → redirect to login
+        } else {
+          // Handle general fetch errors
+          setError("Failed to load notes");
         }
-        loadNotes();    // Run the async function once when the component mounts
-    }, [router]);
-
-    // === Create a new note === //
-    async function createNote(title: string, content: string) {
-        /**
-        * Sends a POST request to create a new note in the backend.
-        * Adds the new note to the local `notes` state.
-        */
-        const token = localStorage.getItem("access_token");
-        if (!token) throw new Error("Not authenticated");
-        // Send POST request with new note data
-        const res = await api.post<Note>(
-            "notes/", // Endpoint: /api/notes/
-            { title, content }, // Payload: note data from form inputs
-            { headers: { Authorization: `Bearer ${token}`} } // Auth header with token
-        );
-        // Update local state with the newly created note
-        // Prepend it to the existing notes list (new note at the top)
-        setNotes((prev) => [res.data, ...prev]);
+      } finally {
+        // Remove loading state regardless of success or failure
+        setLoading(false);
+      }
     }
+    loadNotes(); // Run the async function once when the component mounts
+  }, [router]);
 
-    // === Save edits to an existing note === //
-    async function saveEdit(note: Note) {
-        /**
-        * Sends a PATCH request to update a note’s title and content.
-        * Replaces the updated note in local state with the new version.
-        */
-        const token = localStorage.getItem("access_token");
-        if (!token) throw new Error("Not authenticated");
-        // Send PATCH request to update note
-        const updated = await updateNote(
-            note.id, // Note ID to update
-            { title: note.title, content: note.content }, // New data
-            token // Auth token
-        );
-        // Update local state: replace matching note with updated version
-        setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+  // === Create a new note === //
+  async function createNote(title: string, content: string) {
+    /**
+     * Sends a POST request to create a new note in the backend.
+     * Adds the new note to the local `notes` state.
+     */
+    try {
+      // Send POST request to backend with note data
+      const res = await api.post<Note>("notes/", { title, content });
+
+      // Add new note to top of list
+      setNotes((prev) => [res.data, ...prev]);
+    } catch (err: any) {
+      // Redirect to login if auth token is invalid or expired
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        router.push("/login");
+      } else {
+        // Display error if request fails
+        setError("Failed to create note");
+      }
     }
+  }
 
-    // === Delete a note === //
-    async function removeNote(id: number) {
-        /**
-        * Sends a DELETE request to remove a note from the backend.
-        * Also removes the deleted note from local state.
-        */
-        const token = localStorage.getItem("access_token");
-        if (!token) return;
+  // === Save edits to an existing note === //
+  async function saveEdit(note: Note) {
+    /**
+     * Sends a PATCH request to update a note’s title and content.
+     * Replaces the updated note in local state with the new version.
+     */
+    try {
+      // Send PATCH request with updated title and content
+      const updated = await updateNote(note.id, {
+        title: note.title,
+        content: note.content,
+      });
 
-        await deleteNote(id, token); // Delete note from backend
-
-        // Remove deleted note from the local notes array
-        setNotes((prev) => prev.filter((n) => n.id !== id));
+      // Replace the old version of the note with the updated one in local state
+      setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+    } catch (err: any) {
+      // Redirect to login if unauthorized
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        router.push("/login");
+      } else {
+        // Display error if request fails
+        setError("Failed to edit note");
+      }
     }
+  }
 
-    // === Expose state and functions === //
-    return {
-        notes,          // Array of all current notes
-        error,          // Current error message (if any)
-        loading,        // Whether the app is waiting for an API response
-        createNote,     // Function to create a new note
-        saveEdit,       // Function to update a note
-        removeNote,     // Function to delete a note
-        setNotes,       // Setter (useful for manual updates or optimistic UI)
-        setError,       // Setter for error messages
-    };
+  // === Delete a note === //
+  async function removeNote(id: number) {
+    /**
+     * Sends a DELETE request to remove a note from the backend.
+     * Also removes the deleted note from local state.
+     */
+    try {
+      // Send DELETE request to remove note from backend
+      await deleteNote(id);
+
+      // Filter out the deleted note from local state
+      setNotes((prev) => prev.filter((n) => n.id !== id));
+    } catch (err: any) {
+      // Redirect to login if unauthorized
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        router.push("/login");
+      } else {
+        // Display error if request fails
+        setError("Failed to delete note");
+      }
+    }
+  }
+
+  // === Expose state and functions === //
+  return {
+    notes, // Array of all current notes
+    error, // Current error message (if any)
+    loading, // Whether the app is waiting for an API response
+    createNote, // Function to create a new note
+    saveEdit, // Function to update a note
+    removeNote, // Function to delete a note
+    setNotes, // Setter (useful for manual updates or optimistic UI)
+    setError, // Setter for error messages
+  };
 }
