@@ -35,6 +35,10 @@ const LoginPage = () => {
                 <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full border rounded-lg p-2 mb-3 hover:bg-blue-500/10 hover:border-blue-500 transition duration-300 ease-in-out focus:outline-0 focus:border-blue-500 focus:bg-blue-500/10" />
                 <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border rounded-lg p-2 mb-3 hover:bg-blue-500/10 hover:border-blue-500 transition duration-300 ease-in-out focus:outline-0 focus:border-blue-500 focus:bg-blue-500/10" />
                 <button type="submit" className="w-full border p-2 rounded-lg cursor-pointer hover:bg-green-500/25 hover:border-green-500 transition duration-300 ease-in-out focus:outline-0 focus:border-green-500 focus:bg-green-500/25">Log in</button>
+                <p className="text-sm text-center mt-4">
+                    Don't have an account?{" "}
+                    <a href="/register" className="text-blue-500 hover:underline">Sign up</a>
+                </p>
             </form>
         </div>
     );
