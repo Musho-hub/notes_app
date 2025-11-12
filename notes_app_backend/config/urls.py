@@ -24,6 +24,7 @@ from notes.views_auth import (
     CookieTokenObtainPairView,
     CookieTokenRefreshView,
     CookieLogoutView,
+    RegisterView,
 )
 
 # -----------------------------------------------------------------------------
@@ -60,7 +61,7 @@ urlpatterns = [
     path("api/", include("rest_framework.urls")),
 
     # --- JWT Authentication (cookie-based) ---
-    # Handles login, token refresh, and logout using HttpOnly cookies.
+    # Handles login, token refresh, logout and user registration using HttpOnly cookies.
 
     # Obtain new access + refresh tokens via credentials (username/password)
     path("api/token/", CookieTokenObtainPairView.as_view(), name="token_obtain_pair"),
@@ -70,4 +71,7 @@ urlpatterns = [
 
     # Clear authentication cookies and log the user out
     path("api/auth/logout/", CookieLogoutView.as_view(), name="logout"),
+
+    # Register new users - username/password → creates account and issues JWT cookies
+    path("api/auth/register/", RegisterView.as_view(), name="register"),
 ]
