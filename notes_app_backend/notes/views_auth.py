@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.contrib.auth.models import User
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
 
 # =====================================
 # Cookie Lifetime Configuration
@@ -115,4 +118,53 @@ class CookieLogoutView(APIView):
         response = Response({"detail": "logged_out"}, status=200)
         response.delete_cookie("access_token", path="/")
         response.delete_cookie("refresh_token", path="/")
+        return response
+
+# =====================================
+# Registration View
+# =====================================
+class RegisterView(APIView):
+    """
+    POST → creates a new user and immediately issues JWT cookies.
+
+    Provides a simple sign-up endpoint for new users:
+      - Validates the provided username and password
+      - Rejects duplicate usernames
+      - Creates a new Django User object
+      - Issues access + refresh tokens and sets them as HttpOnly cookies
+      - Returns a minimal success message instead of exposing raw tokens
+    """
+    permission_classes = [AllowAny] # Registration open to unauthenticated users
+
+    def post(self, request):
+        # Extract username and password from request body
+        username = request.data.get("username")
+        password = request.data.get("password")
+
+        # Validate presence of required fields
+        if not username or not password:
+            return Response(
+                {"detail": "Username and password are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Ensure the username is not allready taken
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {"detail": "Username allready exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Create a new Django user account
+        user = User.objects.create_user(username=username, password=password)
+
+        # Generate new JWT tokens for this user
+        refresh = RefreshToken.for_user(user)
+        access = refresh.access_token
+
+        # Build a response and set HttpOnly cookies
+        response = Response({"detail": "registered"}, status=status.HTTP_201_CREATED)
+        response.set_cookie("access_token", str(access), max_age=ACCESS_MAX_AGE, **COOKIE_KWARGS)
+        response.set_cookie("refresh_token", str(refresh), max_age=REFRESH_MAX_AGE, **COOKIE_KWARGS)
+
         return response
