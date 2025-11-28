@@ -6,7 +6,7 @@ const api = axios.create({
     withCredentials: true, // Include cookies (access/refresh) with each request
 });
 
-// === AUTH ENDPOINTS === //
+// === AUTH === //
 
 // Login - cookies are set automatically by the backend
 export async function login(username: string, password: string,) {
@@ -18,7 +18,7 @@ export async function logout() {
     await api.post("auth/logout/");
 }
 
-// === NOTES ENDPOINTS === //
+// === NOTES === //
 
 // Fetch notes - Django reads the access token from cookies
 export async function fetchNotes() {
@@ -35,6 +35,22 @@ export async function updateNote(id: number, data: Partial<Note>) {
 // Delete a note
 export async function deleteNote(id: number) {
     await api.delete(`notes/${id}/`);
+}
+
+// === TAG === //
+
+export async function fetchTags() {
+    const res = await api.get("tags/");
+    return res.data;
+}
+
+export async function createTag(name: string) {
+    const res = await api.post("tags/", {name});
+    return res.data;
+}
+
+export async function deleteTag(id: number) {
+    await api.delete(`tags/${id}/`);
 }
 
 export default api;
