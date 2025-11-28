@@ -10,130 +10,158 @@ import api, { fetchNotes, deleteNote, updateNote } from "@/lib/api";
 import type { Note } from "@/lib/types";
 
 /**
- * Hook to manage note data and API interactions.
- * Handles fetching, creating, updating, and deleting notes
- * from the backend API, using HttpOnly JWT cookies for authentication.
- * This hook also manages local state for loading and error handling,
- * and automatically redirects to `/login` if authentication fails.
+ * useNotes()
+ * ---------------------------------------------------------
+ * Hook that manages:
+ * - Fetching all notes for the authenticated user
+ * - Creating notes (with optional tags)
+ * - Editing notes (title, content, tags)
+ * - Deleting notes
+ *
+ * Works with HttpOnly JWT cookies (authentication handled server-side).
+ * Automatically redirects to `/login` if authentication fails.
  */
 export function useNotes() {
   // ---------------------------------------------------------------------------
   // Local state
   // ---------------------------------------------------------------------------
-  const [notes, setNotes] = useState<Note[]>([]); // All notes fetched from the backend
-  const [error, setError] = useState(""); // Error message
-  const [loading, setLoading] = useState(false); // Whether an API request is in progress
+  const [notes, setNotes] = useState<Note[]>([]); // All notes for the current user
+  const [error, setError] = useState(""); // Error message (if any)
+  const [loading, setLoading] = useState(false); // Loading indicator for API actions
 
   const router = useRouter();
 
-  // === Load notes on mount === //
+  // ---------------------------------------------------------------------------
+  // Load notes on mount
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     /**
-     * Fetch all notes when the component first mounts.
+     * Fetch all notes when the page loads.
      * If authentication fails (401/403), redirect to `/login`.
      */
     async function loadNotes() {
-      setLoading(true); // Show loading state while fetching
+      setLoading(true); // Show loading spinner during fetch
       try {
-        const data = await fetchNotes(); // Fetch notes from the backend (JWT cookie is sent automatically)
-        setNotes(data); // Save fetched notes into state → triggers re-render
+        // Backend automatically sends JWT cookies → no need for headers
+        const data = await fetchNotes();
+        setNotes(data); // Save notes to state
       } catch (err: any) {
-        // If authentication fails (expired or invalid token), redirect to login
+        // Redirect user if auth cookie is missing or expired
         if (err.response?.status === 401 || err.response?.status === 403) {
-          router.push("/login"); // If not authenticated → redirect to login
+          router.push("/login");
         } else {
-          // Handle general fetch errors
+          // Handle network/server errors
           setError("Failed to load notes");
         }
       } finally {
-        // Remove loading state regardless of success or failure
         setLoading(false);
       }
     }
-    loadNotes(); // Run the async function once when the component mounts
+
+    loadNotes(); // Initial mount
   }, [router]);
 
-  // === Create a new note === //
-  async function createNote(title: string, content: string) {
+  // ---------------------------------------------------------------------------
+  // Create a new note (title, content, tags)
+  // ---------------------------------------------------------------------------
+  async function createNote(title: string, content: string, tags: number[]) {
     /**
-     * Sends a POST request to create a new note in the backend.
-     * Adds the new note to the local `notes` state.
+     * Sends a POST request to create a new note.
+     * Includes selected tag IDs in the payload.
+     * On success, prepends the new note to local state.
      */
     try {
-      // Send POST request to backend with note data
-      const res = await api.post<Note>("notes/", { title, content });
+      const res = await api.post<Note>("notes/", {
+        title,
+        content,
+        tags,
+      });
 
       // Add new note to top of list
       setNotes((prev) => [res.data, ...prev]);
     } catch (err: any) {
-      // Redirect to login if auth token is invalid or expired
+      // Auto-redirect if authentication failed
       if (err.response?.status === 401 || err.response?.status === 403) {
         router.push("/login");
+      } else if (err.response?.status === 400) {
+        // Example: user tried assigning a tag owned by someone else (blocked by backend)
+        setError("Invalid tag selection");
       } else {
-        // Display error if request fails
         setError("Failed to create note");
       }
     }
   }
 
-  // === Save edits to an existing note === //
+  // ---------------------------------------------------------------------------
+  // Save updates to an existing note (title, content, tags)
+  // ---------------------------------------------------------------------------
   async function saveEdit(note: Note) {
     /**
-     * Sends a PATCH request to update a note’s title and content.
-     * Replaces the updated note in local state with the new version.
+     * Sends a PATCH request to update an existing note.
+     * The Note object should already contain updated:
+     * - title
+     * - content
+     * - tags (array of tag IDs)
+     *
+     * The updated note is then merged into local state.
      */
     try {
-      // Send PATCH request with updated title and content
       const updated = await updateNote(note.id, {
         title: note.title,
         content: note.content,
+        tags: note.tags,
       });
 
-      // Replace the old version of the note with the updated one in local state
-      setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+      // Replace note in local state
+      setNotes((prev) =>
+        prev.map((n) => (n.id === updated.id ? updated : n))
+      );
     } catch (err: any) {
-      // Redirect to login if unauthorized
+      // Handle expired/missing auth cookie
       if (err.response?.status === 401 || err.response?.status === 403) {
         router.push("/login");
+      } else if (err.response?.status === 400) {
+        setError("Invalid tag selection");
       } else {
-        // Display error if request fails
         setError("Failed to edit note");
       }
     }
   }
 
-  // === Delete a note === //
+  // ---------------------------------------------------------------------------
+  // Delete a note
+  // ---------------------------------------------------------------------------
   async function removeNote(id: number) {
     /**
-     * Sends a DELETE request to remove a note from the backend.
-     * Also removes the deleted note from local state.
+     * Sends a DELETE request to remove a note.
+     * Also removes the note from UI state.
      */
     try {
-      // Send DELETE request to remove note from backend
       await deleteNote(id);
 
-      // Filter out the deleted note from local state
+      // Remove deleted note from local state
       setNotes((prev) => prev.filter((n) => n.id !== id));
     } catch (err: any) {
-      // Redirect to login if unauthorized
+      // If user is no longer authenticated
       if (err.response?.status === 401 || err.response?.status === 403) {
         router.push("/login");
       } else {
-        // Display error if request fails
         setError("Failed to delete note");
       }
     }
   }
 
-  // === Expose state and functions === //
+  // ---------------------------------------------------------------------------
+  // Return everything the UI needs
+  // ---------------------------------------------------------------------------
   return {
-    notes, // Array of all current notes
-    error, // Current error message (if any)
-    loading, // Whether the app is waiting for an API response
-    createNote, // Function to create a new note
-    saveEdit, // Function to update a note
-    removeNote, // Function to delete a note
-    setNotes, // Setter (useful for manual updates or optimistic UI)
-    setError, // Setter for error messages
+    notes,      // All notes
+    error,      // Error message
+    loading,    // Is an API request running?
+    createNote, // Create a new note
+    saveEdit,   // Edit existing note
+    removeNote, // Delete a note
+    setNotes,   // Manually update notes (optional)
+    setError,   // Manually clear/set errors
   };
 }
