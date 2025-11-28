@@ -20,6 +20,7 @@ from rest_framework.routers import DefaultRouter    # Router that auto-creates R
 
 # -= Local imports =- #
 from notes.views import NoteViewSet
+from notes.views_tags import TagViewSet
 from notes.views_auth import (
     CookieTokenObtainPairView,
     CookieTokenRefreshView,
@@ -27,9 +28,6 @@ from notes.views_auth import (
     RegisterView,
 )
 
-# -----------------------------------------------------------------------------
-# API ROUTER
-# -----------------------------------------------------------------------------
 # The DRF DefaultRouter automatically creates REST-style endpoints for viewsets.
 # When we register a viewset, it handles CRUD route generation automatically.
 #
@@ -40,9 +38,14 @@ from notes.views_auth import (
 #   PUT    /api/notes/<id>/   → update an entire note
 #   PATCH  /api/notes/<id>/   → partially update a note
 #   DELETE /api/notes/<id>/   → delete a note
+
+# -----------------------------------------------------------------------------
+# API ROUTER
 # -----------------------------------------------------------------------------
 router = DefaultRouter()
 router.register(r"notes", NoteViewSet, basename="note")
+router.register(r"tags", TagViewSet, basename="tag")
+
 
 # -----------------------------------------------------------------------------
 # URL PATTERNS
