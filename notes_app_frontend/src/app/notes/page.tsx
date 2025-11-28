@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 
 // -= HOOKS =- //
 import { useNotes } from "@/hooks/useNotes";
+import { useTags } from "@/hooks/useTags";
 
 // -= API =- //
 import { logout } from "@/lib/api";
 
 // -= COMPONETS =- //
 import { UserMenu } from "@/components/UserMenu";
+import { TagSelector } from "@/components/TagSelector";
+import { TagChip } from "@/components/TagChip";
 
 // -= TYPES =- //
 import type { Note } from "@/lib/types";
@@ -23,11 +26,19 @@ import type { Note } from "@/lib/types";
  * Uses the `useNotes` hook for all note logic.
  */
 const NotesPage = () => {
+  // Note fields for the "Create note" form
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  
+  // Editing and existing note
   const [editingNote, setEditingNote] = useState<Note | null>(null);
 
+  // Tags selected for a new note
+  const [newNoteTags, setNewNoteTags] = useState<number[]>([]);
+  
+  // == Hooks for notes & tags == //
   const { notes, error, loading, createNote, saveEdit, removeNote, setError } = useNotes();
+  const { tags, createTag, deleteTag } = useTags();
 
   const router = useRouter();
 
@@ -45,9 +56,10 @@ const NotesPage = () => {
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createNote(title, content);
+      await createNote(title, content, newNoteTags);
       setTitle("");
       setContent("");
+      setNewNoteTags([]);
     } catch {
       setError("Failed to create note");
     }
@@ -105,6 +117,17 @@ const NotesPage = () => {
           rows={4}
           required
         />
+        <TagSelector 
+          tags={tags}
+          selected={newNoteTags}
+          onToggle={(tagId) => {
+            setNewNoteTags((prev) => 
+              prev?.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+            );
+          }}
+          onCreate={createTag}
+          onDelete={deleteTag}
+        />
         <button
           type="submit"
           disabled={loading}
@@ -141,6 +164,18 @@ const NotesPage = () => {
                   className="w-full p-2 border rounded-lg mb-2 resize-none hover:bg-yellow-500/10 hover:border-yellow-500 transition duration-300 focus:outline-0 focus:border focus:border-yellow-500 focus:bg-yellow-500/10"
                   rows={3}
                 />
+                <TagSelector 
+                  tags={tags}
+                  selected={editingNote.tags}
+                  onToggle={(tagId) => {
+                    const updatedTags = editingNote.tags.includes(tagId)
+                      ? editingNote.tags.filter((id) => id !== tagId)
+                      : [...editingNote.tags, tagId];
+                    setEditingNote({ ...editingNote, tags: updatedTags });
+                  }}
+                  onCreate={createTag}
+                  onDelete={deleteTag}
+                />
                 <div className="flex justify-between">
                   <button
                     onClick={handleSaveEdit}
@@ -166,6 +201,20 @@ const NotesPage = () => {
                   </small>
                 </div>
                 <p className="text-gray-700 py-5">{note.content}</p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {note.tags.map((tagId) => {
+                    const tag = tags.find((t) => t.id === tagId);
+                    return (
+                      tag && (
+                        <TagChip
+                          key={tagId}
+                          label={tag.name}
+                          selected={false}
+                        />
+                      )
+                    );
+                  })}
+                </div>
                 <div className="mt-2 flex justify-between">
                   <button
                     onClick={() => setEditingNote(note)}
