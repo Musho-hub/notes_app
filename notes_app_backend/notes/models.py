@@ -21,6 +21,37 @@ class Note(models.Model):
         related_name='notes'
     )
 
+    # Many-to-many relations to Tag model
+    # A note can multiple tags, and each tag can belong to multiple notes.
+    tags = models.ManyToManyField(
+        "Tag",              # Quotes allow refferring to Tag before it's defined
+        related_name="notes",
+        blank=True          # Allow notes with no tags
+    )
+
     # String representation of the model (shown in admin, shell, etc.)
     def __str__(self):
         return self.title
+    
+class Tag(models.Model):
+    """
+    per-user tag model.
+
+    Each tag:
+        - Belongs to a user (owner)
+        - has a short text name (e.g., "work", "school")
+    """
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="tags"
+    )
+    name = models.CharField(max_length=30)
+
+    class Meta:
+        # Prevent duplicate tag names per user, but allow same names across users.
+        unique_together = ("owner", "name")
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
