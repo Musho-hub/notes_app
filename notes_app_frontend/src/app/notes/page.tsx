@@ -92,10 +92,7 @@ const NotesPage = () => {
     <div className="p-8 min-h-screen bg-page text-text transition-colors duration-500">
       {/* === Header - Title + User Menu === */}
       <div className="flex justify-between items-center mb-6">
-        {/* <h1 className="text-2xl font-bold underlines">My Notes</h1> */}
-        {/* ^ My Notes ^ */}
         <h1 className="text-2xl font-bold underline capitalize">{username}'s Notes</h1>
-        {/* ^ username + Notes ^ */}
         <UserMenu username={username} onLogout={handleLogout} />
       </div>
 
