@@ -99,6 +99,7 @@ const NotesPage = () => {
         <UserMenu username={username} onLogout={handleLogout} />
       </div>
 
+      <div className="lg:w-3/4 py-10 mx-auto">
       {/* === Create note form === */}
       <form onSubmit={handleCreateNote} className="mb-6 space-y-4">
         <input
@@ -173,8 +174,8 @@ const NotesPage = () => {
                       : [...editingNote.tags, tagId];
                     setEditingNote({ ...editingNote, tags: updatedTags });
                   }}
-                  onCreate={createTag}
-                  onDelete={deleteTag}
+                  onCreate={undefined}
+                  onDelete={undefined}
                 />
                 <div className="flex justify-between">
                   <button
@@ -234,6 +235,7 @@ const NotesPage = () => {
           </li>
         ))}
       </ul>
+      </div>
     </div>
   );
 };
