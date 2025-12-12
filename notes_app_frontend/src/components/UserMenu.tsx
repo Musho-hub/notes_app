@@ -29,8 +29,6 @@ export function UserMenu({ username, onLogout}: UserMenuProps) {
             >
                 {/* Avatar placeholder (first letter of username) */}
                 <ChevronDown size={16} className={`transition-transform duration-200 group-hover:rotate-[0deg] ${open ? "rotate-0 text-success" : "rotate-90 text-text"}`} />
-                {/* <span className="font-medium text-text hidden sm:inline capitalize">{username}</span> */}
-                {/* ^ looks better without maybe? ^ */}
                 <div className="
                         w-8 h-8 rounded-md bg-neutral text-white 
                         flex items-center justify-center font-semibold uppercase
