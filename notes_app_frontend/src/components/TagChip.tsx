@@ -21,7 +21,7 @@ export function TagChip({ label, selected = false, onClick, onDelete }: TagChipP
                     if (e.key === "Enter") onClick?.();
                 }}
                 className={`
-                    inline-flex items-center px-3 py-1 rounded-full border text-sm cursor-pointer
+                    inline-flex items-center px-3 py-1 rounded-lg border text-sm cursor-pointer
                     transition-all duration-200 select-none
 
                     ${selected
