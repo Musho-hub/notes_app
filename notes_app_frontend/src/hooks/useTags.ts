@@ -14,88 +14,85 @@ import {
 import type { Tag } from "@/lib/types";
 
 /**
- * Hook for managing tags:
- * - Fetching all tags
- * - Creating new tags
- * - Deleting tags
+ * useTags()
+ * ---------------------------------------------------------
+ * Manages user tags:
+ * - Fetch all tags on mount
+ * - Create a new tag
+ * - Delete an existing tag
  *
- * Tags are user-specific and require authentication (JWT HttpOnly cookies).
+ * Uses HttpOnly JWT cookies (auth handled by backend).
+ * Redirects to `/login` on 401/403 responses.
  */
 export function useTags() {
+    // === State === //
     const [tags, setTags] = useState<Tag[]>([]); // All tags belonging to the user
-    const [loading, setLoading] = useState(false); // API loading indicator
-    const [error, setError] = useState(""); // Error message
-    const router = useRouter();
+    const [loading, setLoading] = useState(false); // Loading indicator for tag requests
+    const [error, setError] = useState(""); // Error message (empty string = none)
 
-    // ------------------------------------------
-    // Load all tags when component mounts
-    // ------------------------------------------
+    const router = useRouter(); // Next router for auth redirects
+
+    // === Effect: Load tags on mount === //
     useEffect(() => {
         async function loadTags() {
-            setLoading(true);
+            setLoading(true); // Start loading state
 
             try {
                 const data = await fetchTags(); // GET /tags/
-                setTags(data);
+                setTags(data); // Store tags in state
             } catch (err: any) {
+                // If auth is missing/expired → redirect to login
                 if (err.response?.status === 401 || err.response?.status === 403) {
                     router.push("/login");
                 } else {
-                    setError("Failed to load tags");
+                    setError("Failed to load tags"); // Generic fallback error
                 }
             } finally {
-                setLoading(false);
+                setLoading(false); // Stop loading (success or error)
             }
         }
 
-        loadTags();
+        loadTags();     // Run once on mount
     }, [router]);
 
-    // ------------------------------------------
-    // Create a new tag
-    // ------------------------------------------
+    // === Action: Create a new tag === //
     async function createTag(name: string) {
         try {
             const newTag = await createTagAPI(name); // POST /tags/
-
-            // Append new tag to list
-            setTags((prev) => [...prev, newTag]);
+            setTags((prev) => [...prev, newTag]); // Append new tag to list
         } catch (err: any) {
             if (err.response?.status === 400) {
-                setError("Tag already exists");
+                setError("Tag already exists"); // Backend rejected duplicate tag
             } else if (err.response?.status === 401 || err.response?.status === 403) {
-                router.push("/login");
+                router.push("/login"); // Not authenticated
             } else {
-                setError("Failed to create tag");
+                setError("Failed to create tag"); // Generic fallback error
             }
         }
     }
 
-    // ------------------------------------------
-    // Delete a tag
-    // ------------------------------------------
+    // === Action: Delete a tag === //
     async function deleteTag(id: number) {
         try {
             await deleteTagAPI(id); // DELETE /tags/<id>/
-
-            // Remove deleted tag from UI
-            setTags((prev) => prev.filter((t) => t.id !== id));
+            setTags((prev) => prev.filter((t) => t.id !== id)); // Remove tag from state
         } catch (err: any) {
             if (err.response?.status === 401 || err.response?.status === 403) {
-                router.push("/login");
+                router.push("/login"); // Not authenticated
             } else {
-                setError("Failed to delete tag");
+                setError("Failed to delete tag"); // Generic fallback error
             }
         }
     }
 
+    // === Return API === //
     return {
-        tags,
-        loading,
-        error,
-        createTag,
-        deleteTag,
-        setError,
-        setTags,
+        tags,       // All tags
+        loading,    // Is a tag request running?
+        error,      // Current error message
+        createTag,  // Create a new tag
+        deleteTag,  // Delete an existing tag
+        setError,   // Manually clear/set error state
+        setTags,    // Manually override tags (optional)
     };
 }
